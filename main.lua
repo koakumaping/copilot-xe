@@ -6,10 +6,8 @@ local function loadLib(name)
   return lib
 end
 -- global var
-modelName = ''
 var = loadLib('var')
 util = loadLib('util')
-counts = loadLib('counts')
 
 needRefrshRecords = 1
 isFullScreen = 0
@@ -26,12 +24,14 @@ local function create()
   return {
     w = 784,
     h = 316,
+    modelName = model.name(),
     bitmap = lcd.loadBitmap(model.bitmap()),
     flyCounts = 0,
     -- message = '',
     messageStartTime = 0,
     messageEndTime = 0,
     lastFlyTime = 0,
+    counts = loadLib('counts'),
   }
 end
 
@@ -67,9 +67,6 @@ local function wakeup(widget)
     if w == 800 then isFullScreen = 1 end
     lcd.invalidate()
   end
-  if modelName ~= model.name() then
-    modelName = model.name()
-  end
   if h ~= widget.h then
     widget.h = h
     lcd.invalidate()
@@ -77,7 +74,7 @@ local function wakeup(widget)
   time.wakeup(widget)
   ext.wakeup(widget)
   rx.wakeup(widget)
-  counts.wakeup(widget)
+  widget.counts.wakeup(widget)
   copyright.wakeup(widget)
   gps.wakeup(widget)
   usage.wakeup(widget)
@@ -104,7 +101,7 @@ local function paint(widget)
 
   -- line 2
   util.drawBox(widget, fix + left + var.padding, yFix + 114, half, 78, ext.paintCell)
-  util.drawBox(widget, fix + left + var.padding + half + var.padding, yFix + 114, half, 78, counts.paint)
+  util.drawBox(widget, fix + left + var.padding + half + var.padding, yFix + 114, half, 78, widget.counts.paint)
 
   -- line 3
   util.drawBox(widget, fix + left + var.padding, yFix + 200, half, 78, gps.paint)

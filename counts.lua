@@ -5,18 +5,16 @@ local moduleY = 0
 local moduleWidth = 230
 local moduleHeight = 60
 
-local hasInit = 0
 local current = 0
 local _current = 0
 
 local startDate = ''
 local stopDate = ''
 
--- local modelName = model.name()
 local countsRecordFile = '/csv/fly.csv'
 
 local recordFileTitle = 'No,FlyTime,LandingVoltage,RSSI24G(min),RSSI900M(min),StartDate,StopDate\n'
-local recordFileName = string.format('%s%s%s', '/csv/', modelName, '.csv')
+local recordFileName = ''
 -- 延迟记录时间
 local recordTime = 0
 -- 延迟记录标记
@@ -50,7 +48,7 @@ function module.saveConuts()
     end
     if count ~= 1 then
       local _name, _flyTimes, _lastFlyTime = line:match('([^,]+),([^,]+),([^,]+)')
-      if _name == modelName then
+      if _name == model.name() then
         _flyTimes = _current
         _lastFlyTime = getTime()
         saved = 1
@@ -62,7 +60,7 @@ function module.saveConuts()
 
   -- if no data in csv
   if saved == 0 then
-    data = string.format('%s%s,%d,%s\n', data, modelName, _current, getTime())
+    data = string.format('%s%s,%d,%s\n', data, model.name(), _current, getTime())
   end
 
   csv:close()
@@ -122,8 +120,8 @@ function module.saveRecord()
   needRefrshRecords = 1
 end
 
-function module.inits()
-  recordFileName = string.format('%s%s%s', '/csv/', modelName, '.csv')
+function module.init()
+  recordFileName = string.format('%s%s%s', '/csv/', model.name(), '.csv')
   local csv = io.open(countsRecordFile, 'r')
   -- creat if not exist
   if csv == nil then
@@ -140,7 +138,7 @@ function module.inits()
       break
     end
     local name, flyTimes = line:match("([^,]+),([^,]+)")
-    if name == modelName then
+    if name == model.name() then
       _current = flyTimes
       csv:close()
       break
@@ -157,8 +155,6 @@ function module.inits()
   else
     csv:close()
   end
-
-  hasInit = 1
 end
 
 function module.add(widget)
@@ -231,9 +227,6 @@ function module.wakeup(widget)
   --   end
   --   needLcdInvalidate = true
   -- end
-  if hasInit == 0 then
-    module.inits()
-  end
   -- print('current', current, _current)
   if current ~= _current then
     print('current change', current)
