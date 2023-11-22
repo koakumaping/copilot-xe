@@ -4,6 +4,9 @@ module.MAX = 1024
 module.MIN = -1024
 
 module.padding = 8
+module.pd8 = 8
+module.pd16 = 16
+module.pd24 = 24
 
 module.fontWidth = 48
 module.dotWidth = 22
@@ -18,7 +21,7 @@ module.lightRedColor = lcd.RGB(213, 113, 113)
 module.yellowColor = lcd.RGB(248, 176, 56)
 module.lightYellowColor = lcd.RGB(219, 208, 121)
 module.greenColor = lcd.RGB(6, 152, 17)
-module.lightGreenColor = lcd.RGB(148, 222, 18)
+module.lightGreenColor = lcd.RGB(128, 192, 104)
 module.blueColor = lcd.RGB(0, 136, 248)
 module.lightBlueColor = lcd.RGB(0, 136, 248)
 module.greyColor = lcd.RGB(64, 64, 64)
