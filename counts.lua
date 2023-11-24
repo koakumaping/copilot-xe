@@ -5,8 +5,7 @@ local moduleY = 0
 local moduleWidth = 230
 local moduleHeight = 60
 
-local current = 0
-local _current = 0
+local _modelFlyCounts = 0
 
 local startDate = ''
 local stopDate = ''
@@ -16,19 +15,14 @@ local countsRecordFile = '/csv/fly.csv'
 local recordFileTitle = 'No,FlyTime,LandingVoltage,RSSI24G(min),RSSI900M(min),StartDate,StopDate\n'
 local recordFileName = ''
 -- 延迟记录时间
-local recordTime = 0
--- 延迟记录标记
-local recordFlag = 1
+local realRecordTime = 0
 
 local lastFlyTime = 0
 
 local staticTime <const> = 999999999
-local rangeSeconds <const> = 60
+local minFlyTime <const> = 3
 
-local countStartTime = staticTime
-local countStartTimeRecording = false
-local countEndTime = staticTime
-local countEndTimeRecording = false
+local timerStart = model.getTimer(0):start()
 
 function getTime()
   return os.date("%Y-%m-%d %H:%M:%S", os.time())
@@ -49,7 +43,7 @@ function module.saveConuts()
     if count ~= 1 then
       local _name, _flyTimes, _lastFlyTime = line:match('([^,]+),([^,]+),([^,]+)')
       if _name == model.name() then
-        _flyTimes = _current
+        _flyTimes = _modelFlyCounts
         _lastFlyTime = getTime()
         saved = 1
       end
@@ -60,7 +54,7 @@ function module.saveConuts()
 
   -- if no data in csv
   if saved == 0 then
-    data = string.format('%s%s,%d,%s\n', data, model.name(), _current, getTime())
+    data = string.format('%s%s,%d,%s\n', data, model.name(), _modelFlyCounts, getTime())
   end
 
   csv:close()
@@ -71,8 +65,7 @@ function module.saveConuts()
 end
 
 function module.saveRecord()
-  recordTime = 0
-  recordFlag = 1
+  realRecordTime = staticTime
   local data = recordFileTitle
   local csv = io.open(recordFileName, 'r')
 
@@ -101,7 +94,7 @@ function module.saveRecord()
 
   data = string.format('%s%s,%s,%s,%s,%s,%s,%s\n',
     data,
-    string.format('%04d', _current),
+    string.format('%04d', _modelFlyCounts),
     string.format('%s:%s', lastFlyTimeMinutes, lastFlyTimeSeconds),
     string.format('%05.2f%s(%03.2f%s)', ext, 'v', ext / 6, 'v'),
     string.format('%02.0f', util.getRSSI24GMinValue()),
@@ -117,7 +110,6 @@ function module.saveRecord()
   file2save:close()
   model.getTimer(0):value(model.getTimer(0):start())
   system.playFile('Saved.wav')
-  needRefrshRecords = 1
 end
 
 function module.init()
@@ -139,7 +131,7 @@ function module.init()
     end
     local name, flyTimes = line:match("([^,]+),([^,]+)")
     if name == model.name() then
-      _current = flyTimes
+      _modelFlyCounts = flyTimes
       csv:close()
       break
     end
@@ -159,9 +151,9 @@ end
 
 function module.add(widget)
   lastFlyTime = widget.lastFlyTime
-  _current = _current + 1
+  _modelFlyCounts = _modelFlyCounts + 1
   module:saveConuts()
-  recordFlag = 0
+  module:saveRecord()
 end
 
 function module.start()
@@ -175,63 +167,35 @@ end
 function module.handleRecord(widget, value)
   local S3 = system.getSource('SC'):value()
   -- start
-  if S3 > 0 and not countStartTimeRecording then
-    local timerStart = model.getTimer(0):start()
-    local timerValue = model.getTimer(0):value()
-    countEndTimeRecording = false
-    if timerStart == timerValue then
-      countStartTime = os.clock()
-      countStartTimeRecording = true
-      countEndTime = staticTime
+  if S3 > 0 then
+    local _timerValue = model.getTimer(0):value()
+    if timerStart == _timerValue then
       module.start()
     end
   end
   -- end
-  if S3 < 0 and not countEndTimeRecording then
-    countEndTime = os.clock()
-    countStartTimeRecording = false
-    countEndTimeRecording = true
-
+  if S3 < 0 then
     module.stop()
   end
 end
 
-local time = 0
-function module.handleReset(widget)
-  if countEndTimeRecording and countEndTime ~= staticTime then
-    if countEndTime - countStartTime > rangeSeconds then
-      countStartTime = staticTime
-      countEndTime = staticTime
-      module.add(widget)
-    end
-  end
-
-  if os.time() > recordTime and recordFlag == 0 then
-    module:saveRecord()
+function module.handleFlyEnd(widget)
+  local _timerValue = model.getTimer(0):value()
+  print(timerStart, _timerValue, timerStart - _timerValue)
+  if timerStart - _timerValue > minFlyTime and os.time() > realRecordTime then
+    module.add(widget)
   end
 end
 
 function module.wakeup(widget)
-  -- local needLcdInvalidate = false
-  -- local _time = math.floor(os.clock())
-  -- if time ~= _time then
-  --   time = _time
-  --   local integer, decimal = math.modf(time / 1)
-  --   if decimal == 0 then
-  --     print('recordTime', recordTime)
-  --     print('recordFlag', recordFlag)
-  --     print('countStartTime', countStartTime)
-  --     print('countStartTimeRecording', countStartTimeRecording)
-  --     print('countEndTime', countEndTime)
-  --     print('-------------------------------------------------')
-  --   end
-  --   needLcdInvalidate = true
-  -- end
-  -- print('current', current, _current)
-  if current ~= _current then
-    print('current change', current)
-    current = _current
+  if modelFlyCounts ~= _modelFlyCounts then
+    modelFlyCounts = _modelFlyCounts
     lcd.invalidate(moduleX, moduleY, moduleWidth, moduleHeight)
+  end
+
+  local _timerStart = model.getTimer(0):start()
+  if timerStart ~= _timerStart then
+    timerStart = _timerStart
   end
 
   module.handleRecord(widget)
@@ -239,14 +203,13 @@ function module.wakeup(widget)
   local S3 = system.getSource('SC'):value()
   -- S3 up
   if S3 < 0 then
-    module.handleReset(widget)
+    module.handleFlyEnd(widget)
   end
 
   -- S3 down
   if S3 > 0 then
     -- 延迟记录时间 6s
-    recordTime = os.time() + 6
-    if recordFlag ~= 0 then recordFlag = 0 end
+    realRecordTime = os.time() + 10
   end
 end
 
@@ -257,7 +220,7 @@ function module.paint(widget, x, y)
   if moduleY ~= yStart then moduleY = yStart end
 
   lcd.color(var.textColor)
-  util.drawChar(widget, xStart, yStart, string.format('%04d', current))
+  util.drawChar(widget, xStart, yStart, string.format('%04d', modelFlyCounts))
 end
 
 return module

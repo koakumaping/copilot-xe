@@ -9,7 +9,8 @@ end
 var = loadLib('var')
 util = loadLib('util')
 
-needRefrshRecords = 1
+-- global value
+modelFlyCounts = 0
 isFullScreen = 0
 
 local time = loadLib('time')
