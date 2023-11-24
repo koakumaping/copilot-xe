@@ -22,7 +22,7 @@ local lastFlyTime = 0
 local MAX <const> = 999999999
 
 -- 最小记录时间
-local minFlyTime <const> = 3
+local minFlyTime <const> = 60
 
 local gTimerStart = model.getTimer(0):start()
 
