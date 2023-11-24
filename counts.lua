@@ -19,7 +19,9 @@ local realRecordTime = 0
 
 local lastFlyTime = 0
 
-local staticTime <const> = 999999999
+local MAX <const> = 999999999
+
+-- 最小记录时间
 local minFlyTime <const> = 3
 
 local timerStart = model.getTimer(0):start()
@@ -65,7 +67,7 @@ function module.saveConuts()
 end
 
 function module.saveRecord()
-  realRecordTime = staticTime
+  realRecordTime = MAX
   local data = recordFileTitle
   local csv = io.open(recordFileName, 'r')
 
@@ -181,7 +183,6 @@ end
 
 function module.handleFlyEnd(widget)
   local _timerValue = model.getTimer(0):value()
-  print(timerStart, _timerValue, timerStart - _timerValue)
   if timerStart - _timerValue > minFlyTime and os.time() > realRecordTime then
     module.add(widget)
   end
@@ -198,9 +199,8 @@ function module.wakeup(widget)
     timerStart = _timerStart
   end
 
-  module.handleRecord(widget)
-
   local S3 = system.getSource('SC'):value()
+  local _timerValue = model.getTimer(0):value()
   -- S3 up
   if S3 < 0 then
     module.handleFlyEnd(widget)
@@ -208,7 +208,12 @@ function module.wakeup(widget)
 
   -- S3 down
   if S3 > 0 then
-    -- 延迟记录时间 6s
+    if timerStart == _timerValue then
+      module.start()
+    else
+      module.stop()
+    end
+    -- delay 6s to record
     realRecordTime = os.time() + 10
   end
 end
