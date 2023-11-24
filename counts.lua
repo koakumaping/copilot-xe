@@ -24,7 +24,7 @@ local MAX <const> = 999999999
 -- 最小记录时间
 local minFlyTime <const> = 3
 
-local timerStart = model.getTimer(0):start()
+local gTimerStart = model.getTimer(0):start()
 
 function getTime()
   return os.date("%Y-%m-%d %H:%M:%S", os.time())
@@ -171,7 +171,7 @@ function module.handleRecord(widget, value)
   -- start
   if S3 > 0 then
     local _timerValue = model.getTimer(0):value()
-    if timerStart == _timerValue then
+    if gTimerStart == _timerValue then
       module.start()
     end
   end
@@ -183,20 +183,15 @@ end
 
 function module.handleFlyEnd(widget)
   local _timerValue = model.getTimer(0):value()
-  if timerStart - _timerValue > minFlyTime and os.time() > realRecordTime then
+  if gTimerStart - _timerValue > minFlyTime and os.time() > realRecordTime then
     module.add(widget)
   end
 end
 
 function module.wakeup(widget)
-  if modelFlyCounts ~= _modelFlyCounts then
-    modelFlyCounts = _modelFlyCounts
+  if gModelFlyCounts ~= _modelFlyCounts then
+    gModelFlyCounts = _modelFlyCounts
     lcd.invalidate(moduleX, moduleY, moduleWidth, moduleHeight)
-  end
-
-  local _timerStart = model.getTimer(0):start()
-  if timerStart ~= _timerStart then
-    timerStart = _timerStart
   end
 
   local S3 = system.getSource('SC'):value()
@@ -208,7 +203,7 @@ function module.wakeup(widget)
 
   -- S3 down
   if S3 > 0 then
-    if timerStart == _timerValue then
+    if gTimerStart == _timerValue then
       module.start()
     else
       module.stop()
@@ -225,7 +220,7 @@ function module.paint(widget, x, y)
   if moduleY ~= yStart then moduleY = yStart end
 
   lcd.color(var.textColor)
-  util.drawChar(widget, xStart, yStart, string.format('%04d', modelFlyCounts))
+  util.drawChar(widget, xStart, yStart, string.format('%04d', gModelFlyCounts))
 end
 
 return module

@@ -15,7 +15,6 @@ local played = false
 local playTime = os.clock()
 
 function module.wakeup(widget)
-  local _direction = model.getTimer(0):direction()
   local _flyTime = tonumber(model.getTimer(0):value())
   local _allTime = tonumber(model.getTimer(1):value())
 
@@ -27,7 +26,7 @@ function module.wakeup(widget)
 
   if _flyTime ~= flyTime then
     flyTime = isMinus and (0 - _flyTime) or  _flyTime
-    widget.lastFlyTime = _direction < 0 and model.getTimer(0):start() - _flyTime or _flyTime
+    widget.lastFlyTime = gTimerDirection < 0 and gTimerStart - _flyTime or _flyTime
     lcd.invalidate(moduleX, moduleY, moduleWidth, moduleHeight)
 
     -- reset paly flag
@@ -38,7 +37,7 @@ function module.wakeup(widget)
     if played == true then return end
 
     local minutes = 60
-    if _direction < 0 then
+    if gTimerDirection < 0 then
       for i = 10, 1, -1 do
         if _flyTime == i * minutes + 1 then
           system.playFile(string.format('%d%s', i, 'm.wav'))

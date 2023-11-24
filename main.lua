@@ -9,10 +9,7 @@ end
 var = loadLib('var')
 util = loadLib('util')
 
--- global value
-modelFlyCounts = 0
-isFullScreen = 0
-
+local gvar = loadLib('global')
 local time = loadLib('time')
 local bitmap = loadLib('bitmap')
 local ext = loadLib('ext')
@@ -65,13 +62,15 @@ local function wakeup(widget)
   local w, h = lcd.getWindowSize()
   if w ~= widget.w then
     widget.w = w
-    if w == 800 then isFullScreen = 1 end
+    if w == 800 then gIsFullScreen = 1 end
     lcd.invalidate()
   end
   if h ~= widget.h then
     widget.h = h
     lcd.invalidate()
   end
+
+  gvar.wakeup(widget)
   time.wakeup(widget)
   ext.wakeup(widget)
   rx.wakeup(widget)
@@ -90,8 +89,8 @@ local function paint(widget)
   local third = 152
   local forth = 112
 
-  local fix = isFullScreen == 0 and 0 or var.padding
-  local yFix = isFullScreen == 0 and 0 or 480 - 316 - var.padding
+  local fix = gIsFullScreen == 0 and 0 or var.padding
+  local yFix = gIsFullScreen == 0 and 0 or 480 - 316 - var.padding
 
   util.drawBox(widget, fix, yFix, left, 70 + 36, time.paint)
   util.drawBox(widget, fix, yFix + 114, left, var.modelBitmapHeight + 16, bitmap.paint)
